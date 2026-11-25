@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystery Box Challenge</title>
+<style>
+:root{
+  --bg:#10162b;--panel:#1b2544;--panel2:#243158;--gold:#ffd166;
+  --cyan:#65e6f2;--pink:#ff6b9a;--green:#65e6a6;--white:#f7f8ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#283965 0,#10162b 55%,#090e1d 100%);color:var(--white);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+header{text-align:center;padding:22px 18px 10px}
+h1{font-size:clamp(2.2rem,5vw,4.8rem);margin:0;color:var(--gold);letter-spacing:2px;text-shadow:0 4px 0 #805c20,0 0 24px #ffd16655}
+.subtitle{font-size:clamp(1rem,2vw,1.5rem);margin:8px 0 0;color:#dce5ff}
+main{max-width:1500px;margin:auto;padding:14px 22px 30px}
+.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:12px 0 20px}
+.team{background:linear-gradient(145deg,#26345c,#18213d);border:2px solid #53658f;border-radius:18px;padding:14px;text-align:center;box-shadow:0 8px 22px #0005}
+.team.active{border-color:var(--gold);box-shadow:0 0 0 3px #ffd16633,0 8px 22px #0005}
+.team-name{font-size:clamp(1rem,2vw,1.5rem);font-weight:800}
+.score{font-size:clamp(2rem,4vw,3.3rem);font-weight:900;color:var(--gold);margin:4px 0}
+.team button{font-size:clamp(.8rem,1.3vw,1rem)}
+button{border:0;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer;color:#11182d;background:var(--gold);transition:.15s}
+button:hover{filter:brightness(1.1);transform:translateY(-1px)}
+button:focus-visible{outline:4px solid white;outline-offset:3px}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.team button{background:#dce5ff;margin:2px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 16px}
+.turn{font-size:clamp(1rem,2vw,1.4rem);font-weight:800}
+.turn strong{color:var(--cyan)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;color:#dce5ff;font-size:clamp(.8rem,1.3vw,1rem)}
+.legend span{background:#ffffff12;padding:7px 11px;border-radius:9px}
+.grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+.box-btn{aspect-ratio:1/1;min-height:68px;background:linear-gradient(145deg,#354b80,#1d2b50);border:2px solid #8296c8;color:white;border-radius:16px;font-size:clamp(1.35rem,3vw,2.5rem);font-weight:900;box-shadow:0 6px 0 #111a35,0 10px 18px #0005;position:relative}
+.box-btn::after{content:"?";position:absolute;bottom:5px;right:10px;font-size:.55em;color:#ffd166}
+.box-btn:hover{background:linear-gradient(145deg,#4c669f,#293d6b)}
+.box-btn.opened{background:#20283e;border-color:#3e4966;color:#8791aa;box-shadow:none;opacity:.65}
+.box-btn.opened::after{content:"✓";color:var(--green)}
+.box-btn.bomb-opened{background:#55273b;border-color:#b84b6a}
+.note{text-align:center;color:#b9c6e8;margin:18px 0 0;font-size:clamp(.85rem,1.4vw,1.1rem)}
+.modal{position:fixed;inset:0;background:#050918eF;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}
+.modal.show{display:flex}
+.dialog{width:min(1100px,96vw);max-height:94vh;overflow:auto;background:linear-gradient(145deg,#26365f,#141d38);border:3px solid var(--gold);border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:0 20px 70px #000b;text-align:center}
+.tag{display:inline-block;background:#ffffff18;color:var(--cyan);border:1px solid #65e6f277;border-radius:999px;padding:8px 18px;font-size:clamp(.9rem,1.6vw,1.2rem);font-weight:800;margin-bottom:12px}
+.points{font-size:clamp(1.3rem,2.5vw,2rem);color:var(--gold);font-weight:900;margin:5px}
+.question{font-size:clamp(1.65rem,4vw,3.5rem);font-weight:900;line-height:1.25;margin:20px 0;white-space:pre-wrap}
+.choices{font-size:clamp(1.25rem,2.6vw,2.2rem);line-height:1.5;text-align:left;white-space:pre-line;display:inline-block;margin:0 auto 18px}
+.answer{display:none;background:#0e1830;border:2px solid var(--green);border-radius:16px;padding:18px;margin:18px auto;font-size:clamp(1.3rem,2.6vw,2.1rem);font-weight:800;max-width:900px}
+.answer.show{display:block}
+.bomb-title{font-size:clamp(2.5rem,7vw,5.5rem);color:#ff6b78;font-weight:1000;margin:8px}
+.bomb-msg{font-size:clamp(1.4rem,3vw,2.5rem);line-height:1.3}
+.modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.secondary{background:#dce5ff}
+.danger{background:#ff8190}
+footer{text-align:center;color:#8795b8;font-size:.85rem;padding:8px 12px 22px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.scoreboard{gap:8px}.team{padding:10px}}
+@media(max-width:520px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.scoreboard{grid-template-columns:1fr}.team{display:grid;grid-template-columns:1fr auto;align-items:center}.score{grid-column:2;grid-row:1/3}.team button{grid-column:1}}
+@media(min-width:1300px){main{max-width:1700px}.grid{gap:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎁 MYSTERY BOX CHALLENGE 💣</h1>
+  <p class="subtitle">Choose a box. Answer the question. Earn points… but watch out for bombs!</p>
+</header>
+<main>
+  <section class="scoreboard" aria-label="Team scores">
+    <div class="team active" id="teamCard0">
+      <div class="team-name">🔵 GROUP 1</div><div class="score" id="score0">0</div>
+      <button onclick="selectTeam(0)">Choose Group 1</button>
+    </div>
+    <div class="team" id="teamCard1">
+      <div class="team-name">🟣 GROUP 2</div><div class="score" id="score1">0</div>
+      <button onclick="selectTeam(1)">Choose Group 2</button>
+    </div>
+    <div class="team" id="teamCard2">
+      <div class="team-name">🟢 GROUP 3</div><div class="score" id="score2">0</div>
+      <button onclick="selectTeam(2)">Choose Group 3</button>
+    </div>
+  </section>
+  <div class="toolbar">
+    <div class="turn">Playing now: <strong id="currentTeam">GROUP 1</strong></div>
+    <div class="legend"><span>⭐ Question boxes: +5 / +10 / +15 / +20</span><span>💣 Bomb boxes: −10 / −20</span></div>
+    <button class="secondary" onclick="resetGame()">↻ New Game / Reset</button>
+  </div>
+  <section class="grid" id="boxGrid" aria-label="40 mystery boxes"></section>
+  <p class="note">Select the group whose turn it is, then choose any unopened number.</p>
+</main>
+<footer>Teacher controls: show the answer, then award or deduct the points.</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="dialog">
+    <div class="tag" id="modalTag">MYSTERY BOX</div>
+    <div class="points" id="modalPoints"></div>
+    <div id="questionArea">
+      <div class="question" id="modalTitle"></div>
+      <div class="choices" id="modalChoices"></div>
+      <div class="answer" id="modalAnswer"></div>
+      <div class="modal-actions">
+        <button class="secondary" id="answerButton" onclick="toggleAnswer()">Show Answer</button>
+        <button id="awardButton" onclick="applyResult()">Award Points</button>
+        <button class="secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+    <div id="bombArea" style="display:none">
+      <div class="bomb-title">💣 BOOM!</div>
+      <div class="bomb-msg" id="bombMessage"></div>
+      <div class="modal-actions">
+        <button class="danger" onclick="applyResult()">Deduct Points</button>
+        <button class="secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+ {type:"Multiple Choice",q:"Which of the following is an example of digital art?",choices:["A. Drawing using a computer application","B. Planting vegetables","C. Cooking food","D. Washing clothes"],a:"A. Drawing using a computer application"},
+ {type:"True or False",q:"Digital piracy is the legal sharing of copyrighted materials without permission.",choices:[],a:"FALSE"},
+ {type:"Identification",q:"It refers to the ability to recover and continue despite difficulties and challenges.",choices:[],a:"Resilience"},
+ {type:"Multiple Choice",q:"What is the main purpose of copyright?",choices:["A. To copy other people's work","B. To protect the rights of creators","C. To stop people from creating art","D. To remove original artworks"],a:"B. To protect the rights of creators"},
+ {type:"True or False",q:"Heritage preservation helps protect cultural traditions and historical artworks.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It refers to the illegal copying, downloading, or distribution of digital content.",choices:[],a:"Digital Piracy"},
+ {type:"Multiple Choice",q:"Which action shows respect for another artist's work?",choices:["A. Copying without permission","B. Claiming another person's artwork","C. Giving proper credit and asking permission","D. Selling someone else's work as your own"],a:"C. Giving proper credit and asking permission"},
+ {type:"True or False",q:"Technology has no effect on the development of the creative industries.",choices:[],a:"FALSE"},
+ {type:"Identification",q:"It is the law known as the Philippine Creative Industries Development Act.",choices:[],a:"RA 11904"},
+ {type:"Multiple Choice",q:"Which of the following helps preserve Philippine culture?",choices:["A. Ignoring traditional practices","B. Destroying historical objects","C. Promoting traditional dances and crafts","D. Copying artworks without permission"],a:"C. Promoting traditional dances and crafts"},
+ {type:"True or False",q:"Copyright protects the original works of artists and creators.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It refers to the unfair treatment or unequal opportunities between men and women.",choices:[],a:"Gender Inequality"},
+ {type:"Multiple Choice",q:"What should artists do when facing challenges in their creative work?",choices:["A. Give up immediately","B. Ignore the problems","C. Continue learning and find solutions","D. Stop creating artworks"],a:"C. Continue learning and find solutions"},
+ {type:"True or False",q:"Censorship refers to controlling or restricting certain forms of information or artistic expression.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It is the process of protecting and maintaining cultural traditions, historical places, and artistic heritage.",choices:[],a:"Heritage Preservation"},
+ {type:"Multiple Choice",q:"What is the purpose of RA 11904?",choices:["A. To promote and develop Philippine creative industries","B. To prohibit digital artworks","C. To remove cultural traditions","D. To limit artistic expression"],a:"A. To promote and develop Philippine creative industries"},
+ {type:"True or False",q:"Child protection policies are not important in the creative industries.",choices:[],a:"FALSE"},
+ {type:"Identification",q:"It refers to the ownership and legal rights over creative works, inventions, and original ideas.",choices:[],a:"Intellectual Property"},
+ {type:"Multiple Choice",q:"Which of the following is an example of digital piracy?",choices:["A. Buying an original movie","B. Creating your own artwork","C. Downloading copyrighted movies illegally","D. Supporting local artists"],a:"C. Downloading copyrighted movies illegally"},
+ {type:"True or False",q:"Digital technology helps artists create and share their artworks.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It involves restricting or controlling certain information, ideas, or artistic expressions.",choices:[],a:"Censorship"},
+ {type:"Multiple Choice",q:"Why is public support important in the creative industries?",choices:["A. It prevents artists from working.","B. It provides opportunities and resources for artists.","C. It stops the development of technology.","D. It limits creativity."],a:"B. It provides opportunities and resources for artists."},
+ {type:"True or False",q:"Artists should always respect the intellectual property of other creators.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It is the legal protection given to original works of authors, artists, and creators.",choices:[],a:"Copyright"},
+ {type:"Multiple Choice",q:"Which of the following is an example of cultural appropriation?",choices:["A. Respectfully learning about another culture","B. Using cultural symbols without understanding their meaning","C. Preserving traditional dances","D. Supporting local artists"],a:"B. Using cultural symbols without understanding their meaning"},
+ {type:"True or False",q:"Public funding can help artists develop their talents and creative projects.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It refers to using digital tools and technology to create artworks.",choices:[],a:"Digital Art"},
+ {type:"Multiple Choice",q:"What should an artist consider when evaluating a technology-based creative work?",choices:["A. Its quality, creativity, and effectiveness","B. Its price only","C. Its color only","D. Its popularity only"],a:"A. Its quality, creativity, and effectiveness"},
+ {type:"True or False",q:"Cultural appropriation happens when someone uses elements of another culture without proper respect or understanding.",choices:[],a:"TRUE"},
+ {type:"Identification",q:"It refers to the act of using another person's work without giving proper credit or permission.",choices:[],a:"Plagiarism"}
+];
+
+let teams=[0,0,0],activeTeam=0,boxes=[],currentBox=null;
+const teamNames=["GROUP 1","GROUP 2","GROUP 3"];
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function makeBoxes(){
+ const q=shuffle([...questions]).map((question)=>({kind:"question",question,points:[5,10,15,20][Math.floor(Math.random()*4)]}));
+ const bombs=Array.from({length:10},()=>({kind:"bomb",points:Math.random()<.5?10:20}));
+ boxes=shuffle([...q,...bombs]).map((b,i)=>({...b,number:i+1,opened:false}));
+ renderBoxes();
+}
+function renderBoxes(){
+ const grid=document.getElementById("boxGrid");grid.innerHTML="";
+ boxes.forEach((b,i)=>{
+  const btn=document.createElement("button");btn.className="box-btn"+(b.opened?(b.kind==="bomb"?" opened bomb-opened":" opened"):"");
+  btn.textContent=b.number;btn.disabled=b.opened;btn.setAttribute("aria-label","Mystery box "+b.number+(b.opened?", opened":""));
+  btn.addEventListener("click",()=>openBox(i));grid.appendChild(btn);
+ });
+}
+function selectTeam(i){activeTeam=i;updateScores();}
+function updateScores(){
+ teams.forEach((s,i)=>{document.getElementById("score"+i).textContent=s;document.getElementById("teamCard"+i).classList.toggle("active",i===activeTeam);});
+ document.getElementById("currentTeam").textContent=teamNames[activeTeam];
+}
+function openBox(i){
+ const b=boxes[i];if(b.opened)return;b.opened=true;currentBox=b;renderBoxes();
+ document.getElementById("modal").classList.add("show");
+ document.getElementById("modalAnswer").classList.remove("show");
+ if(b.kind==="bomb"){
+  document.getElementById("modalTag").textContent="BOMB BOX";
+  document.getElementById("modalPoints").textContent="−"+b.points+" POINTS";
+  document.getElementById("questionArea").style.display="none";
+  document.getElementById("bombArea").style.display="block";
+  document.getElementById("bombMessage").textContent=teamNames[activeTeam]+" hit a bomb! Deduct "+b.points+" points.";
+ }else{
+  document.getElementById("modalTag").textContent=b.question.type.toUpperCase();
+  document.getElementById("modalPoints").textContent="THIS BOX IS WORTH +"+b.points+" POINTS";
+  document.getElementById("questionArea").style.display="block";
+  document.getElementById("bombArea").style.display="none";
+  document.getElementById("modalTitle").textContent=b.question.q;
+  document.getElementById("modalChoices").textContent=b.question.choices.join("\n");
+  document.getElementById("modalAnswer").textContent="CORRECT ANSWER: "+b.question.a;
+  document.getElementById("answerButton").style.display="inline-block";
+  document.getElementById("answerButton").textContent="Show Answer";
+  document.getElementById("awardButton").textContent="Award +"+b.points+" Points";
+ }
+}
+function toggleAnswer(){
+ const a=document.getElementById("modalAnswer");a.classList.toggle("show");
+ document.getElementById("answerButton").textContent=a.classList.contains("show")?"Hide Answer":"Show Answer";
+}
+function applyResult(){
+ if(!currentBox)return;
+ teams[activeTeam]+=currentBox.kind==="bomb"?-currentBox.points:currentBox.points;
+ updateScores();closeModal();
+}
+function closeModal(){document.getElementById("modal").classList.remove("show");currentBox=null;}
+function resetGame(){
+ if(!confirm("Start a new game? All scores and opened boxes will be reset."))return;
+ teams=[0,0,0];activeTeam=0;updateScores();makeBoxes();closeModal();
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+makeBoxes();updateScores();
+</script>
+</body>
+</html>
